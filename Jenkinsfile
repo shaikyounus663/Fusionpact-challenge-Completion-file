@@ -1,34 +1,44 @@
 pipeline {
   agent any
+  environment {
+    DOCKER_USER = credentials('dockerhub-username')    // DockerHub username stored in Jenkins credentials
+    DOCKER_PASS = credentials('dockerhub-password')    // DockerHub password or PAT stored in Jenkins credentials
+  }
   stages {
     stage('Checkout') {
       steps {
         checkout scm
       }
     }
-    stage('Build') {
+    stage('Build Frontend') {
       steps {
-        bat 'docker build -t app:latest .'
+        %var% 'docker build -t frontend-app:latest ./frontend'
       }
     }
-    stage('Test') {
+    stage('Build Backend') {
       steps {
-        bat 'docker run --rm app:latest npm test'
+        %var% 'docker build -t backend-app:latest ./backend'
+      }
+    }
+    stage('Test Backend') {
+      steps {
+        // Assuming backend container has tests and can run with 'npm test' or change according to your backend test command
+        %var% 'docker run --rm backend-app:latest npm test'
       }
     }
     stage('Push to DockerHub') {
       steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'younus49', passwordVariable: 'dckr_pat_EfG-UYTTEy3JzFLWlqFkchlLHWU')]) {
-          bat 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-          bat 'docker tag app:latest $DOCKER_USER/app:latest'
-          bat 'docker push $DOCKER_USER/app:latest'
-        }
+        %var% 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
+        %var% 'docker tag frontend-app:latest %DOCKER_USER%/frontend-app:latest'
+        %var% 'docker tag backend-app:latest %DOCKER_USER%/backend-app:latest'
+        %var% 'docker push %DOCKER_USER%/frontend-app:latest'
+        %var% 'docker push %DOCKER_USER%/backend-app:latest'
       }
     }
     stage('Deploy') {
       steps {
-        // Use your deployment commands or script here
-        bat './deploy.bat'
+        // Use your deployment commands here, e.g.
+        %var% './deploy.bat'
       }
     }
   }
