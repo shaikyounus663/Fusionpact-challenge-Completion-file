@@ -21,7 +21,7 @@ pipeline {
     }
     stage('Test Backend') {
       steps {
-        bat "docker run --rm backend-app:latest npm test"
+        bat "docker run --rm backend-app:latest python -m unittest"
       }
     }
     stage('Push to DockerHub') {
